@@ -154,6 +154,18 @@ describe Mail::Encodings do
       Mail::Encodings.value_decode(string).should == string
     end
 
+    it "should collapse adjacent words" do
+      string = "=?utf-8?B?0L3QvtCy0YvQuSDRgdC+0YLRgNGD0LTQvdC40Log4oCUINC00L7RgNC+0YQ=?=\n =?utf-8?B?0LXQtdCy?="
+      result = "новый сотрудник — дорофеев"
+      Mail::Encodings.value_decode(string).should == result
+    end
+
+    it "should parse adjacent words with no space" do
+      string = "=?utf-8?B?0L3QvtCy0YvQuSDRgdC+0YLRgNGD0LTQvdC40Log4oCUINC00L7RgNC+0YQ=?==?utf-8?B?0LXQtdCy?="
+      result = "новый сотрудник — дорофеев"
+      Mail::Encodings.value_decode(string).should == result
+    end
+
     if '1.9'.respond_to?(:force_encoding)
       it "should decode 8bit encoded string" do
         string = "=?8bit?Q?ALPH=C3=89E?="
@@ -633,6 +645,11 @@ describe Mail::Encodings do
         b.should eq "simple – dash – "
       end
 
+      it "should recognize iso646-us" do
+        decoded = Mail::Encodings.value_decode "[kj] =?ISO646-US?Q?Re:_[kj]_[KJ]_Money_is_not_our_god_should_?=\r\n =?ISO646-US?Q?be_played_on_US_Tour...+_Elys=3Fe_Montmartre?="
+        decoded.should == "[kj] Re: [kj] [KJ] Money is not our god should be played on US Tour...+ Elys?e Montmartre"
+      end
+
       it "should unquote multiple strings in the middle of the text" do
         a = "=?Shift_JIS?Q?=93=FA=96{=8C=EA=?= <a@example.com>, =?Shift_JIS?Q?=93=FA=96{=8C=EA=?= <b@example.com>"
         b = Mail::Encodings.unquote_and_convert_to(a, 'utf-8')
@@ -647,6 +664,12 @@ describe Mail::Encodings do
 
       it "should handle quoted string with mixed content that have a plain string at the end" do
         a = 'Der Kunde ist K=?utf-8?B?w7Y=?=nig'
+        b = Mail::Encodings.unquote_and_convert_to(a, 'utf-8')
+        b.should eq "Der Kunde ist König"
+      end
+
+      it "should handle utf_8" do
+        a = 'Der Kunde ist K=?utf_8?B?w7Y=?=nig'
         b = Mail::Encodings.unquote_and_convert_to(a, 'utf-8')
         b.should eq "Der Kunde ist König"
       end

@@ -186,6 +186,8 @@ mail['from'] = 'mikel@test.lindsaar.net'
 mail[:to]    = 'you@test.lindsaar.net'
 mail.subject = 'This is a test email'
 
+mail.header['X-Custom-Header'] = 'custom value'
+
 mail.to_s #=> "From: mikel@test.lindsaar.net\r\nTo: you@...
 ```
 
@@ -265,6 +267,15 @@ mail.delivery_method :sendmail
 
 mail.deliver
 ```
+
+Sending via smtp (for example to [mailcatcher](https://github.com/sj26/mailcatcher))
+```ruby
+
+Mail.defaults do
+  delivery_method :smtp, address: "localhost", port: 1025
+end
+```
+
 
 Exim requires its own delivery manager, and can be used like so:
 
@@ -363,7 +374,7 @@ mail.attachments.each do | attachment |
     filename = attachment.filename
     begin
       File.open(images_dir + filename, "w+b", 0644) {|f| f.write attachment.body.decoded}
-    rescue Exception => e
+    rescue => e
       puts "Unable to save data for #{filename} because #{e.message}"
     end
   end
@@ -546,7 +557,7 @@ Using Mail with Testing or Spec'ing Libraries
 If mail is part of your system, you'll need a way to test it without actually
 sending emails, the TestMailer can do this for you.
 
-```
+```ruby
 require 'mail'
 => true
 Mail.defaults do
@@ -572,7 +583,7 @@ Mail::TestMailer.deliveries.clear
 
 There is also a set of RSpec matchers stolen fr^H^H^H^H^H^H^H^H inspired by Shoulda's ActionMailer matchers (you'll want to set <code>delivery_method</code> as above too):
 
-```
+```ruby
 Mail.defaults do
   delivery_method :test # in practice you'd do this in spec_helper.rb
 end

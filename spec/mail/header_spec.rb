@@ -52,6 +52,12 @@ describe Mail::Header do
       header['content-type'] = 'text/plain; charset=utf-8'
       header.charset.should eq 'utf-8'
     end
+
+    it "should not unset previously set charset if content-type is set without charset" do
+      header = Mail::Header.new(nil, 'utf-8')
+      header['content-type'] = 'text/plain'
+      header.charset.should eq 'utf-8'
+    end
     
     it "shouldn't die when queried for a charset and the content-type header is invalid" do
       header = Mail::Header.new
@@ -461,10 +467,10 @@ HERE
       header = Mail::Header.new("Content-Transfer-Encoding: vl@d\r\nReply-To: a b b")
       header.errors.should_not be_blank
       header.errors.size.should eq 2
-      header.errors[0][0].should eq 'Content-Transfer-Encoding'
-      header.errors[0][1].should eq 'vl@d'
-      header.errors[1][0].should eq 'Reply-To'
-      header.errors[1][1].should eq 'a b b'
+      header.errors[0][0].should eq 'Reply-To'
+      header.errors[0][1].should eq 'a b b'
+      header.errors[1][0].should eq 'Content-Transfer-Encoding'
+      header.errors[1][1].should eq 'vl@d'
     end
   end
 

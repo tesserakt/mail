@@ -109,7 +109,7 @@ describe Mail::Message do
 
     it "should raise a warning (and keep parsing) on having an incorrectly formatted header" do
       STDERR.should_receive(:puts).with("WARNING: Could not parse (and so ignoring) 'quite Delivered-To: xxx@xxx.xxx'")
-      Mail.read(fixture('emails', 'plain_emails', 'raw_email_incorrect_header.eml'))
+      Mail.read(fixture('emails', 'plain_emails', 'raw_email_incorrect_header.eml')).to_s
     end
 
     it "should read in an email message and basically parse it" do
@@ -339,9 +339,12 @@ describe Mail::Message do
     end
 
     it "should parse non-UTF8 sources" do
-      mail = Mail.read(fixture('emails', 'multi_charset', 'japanese_shiftjis.eml'))
+      raw_message = File.read(fixture('emails', 'multi_charset', 'japanese_shiftjis.eml'))
+      original_encoding = raw_message.encoding if raw_message.respond_to?(:encoding)
+      mail = Mail.new(raw_message)
       mail.to.should eq ["raasdnil@gmail.com"]
       mail.decoded.should eq "すみません。\n\n"
+      raw_message.encoding.should eq original_encoding if raw_message.respond_to?(:encoding)
     end
   end
 
@@ -1340,44 +1343,34 @@ describe Mail::Message do
         m1 = Mail.new("To: mikel@test.lindsaar.net\r\nSubject: Yo!\r\n\r\nHello there")
         m2 = Mail.new("To: mikel@test.lindsaar.net\r\nSubject: Yo!\r\n\r\nHello there")
         m1.should eq m2
+        # confirm there are no side-effects in the comparison
+        m1.message_id.should be_nil
+        m2.message_id.should be_nil
       end
 
       it "should ignore the message id value if self has a nil message id" do
         m1 = Mail.new("To: mikel@test.lindsaar.net\r\nSubject: Yo!\r\n\r\nHello there")
         m2 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <1234@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
         m1.should eq m2
+        # confirm there are no side-effects in the comparison
+        m1.message_id.should be_nil
+        m2.message_id.should eq '1234@test.lindsaar.net'
       end
 
       it "should ignore the message id value if other has a nil message id" do
         m1 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <1234@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
         m2 = Mail.new("To: mikel@test.lindsaar.net\r\nSubject: Yo!\r\n\r\nHello there")
         m1.should eq m2
+        # confirm there are no side-effects in the comparison
+        m1.message_id.should eq '1234@test.lindsaar.net'
+        m2.message_id.should be_nil
       end
 
       it "should not be == if both emails have different Message IDs" do
         m1 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <4321@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
         m2 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <1234@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
         m1.should_not eq m2
-      end
-
-      it "should preserve the message id of self if set" do
-        m1 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <1234@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
-        m2 = Mail.new("To: mikel@test.lindsaar.net\r\nSubject: Yo!\r\n\r\nHello there")
-        (m1 == m2).should be_true # confirm the side-effects of the comparison
-        m1.message_id.should eq '1234@test.lindsaar.net'
-      end
-
-      it "should preserve the message id of other if set" do
-        m1 = Mail.new("To: mikel@test.lindsaar.net\r\nSubject: Yo!\r\n\r\nHello there")
-        m2 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <1234@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
-        (m1 == m2).should be_true # confirm the side-effects of the comparison
-        m2.message_id.should eq '1234@test.lindsaar.net'
-      end
-
-      it "should preserve the message id of both if set" do
-        m1 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <4321@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
-        m2 = Mail.new("To: mikel@test.lindsaar.net\r\nMessage-ID: <1234@test.lindsaar.net>\r\nSubject: Yo!\r\n\r\nHello there")
-        (m1 == m2).should be_false # confirm the side-effects of the comparison
+        # confirm there are no side-effects in the comparison
         m1.message_id.should eq '4321@test.lindsaar.net'
         m2.message_id.should eq '1234@test.lindsaar.net'
       end
@@ -1575,10 +1568,10 @@ describe Mail::Message do
       mail = Mail.new("Content-Transfer-Encoding: vl@d\r\nReply-To: a b b\r\n")
       mail.errors.should_not be_blank
       mail.errors.size.should eq 2
-      mail.errors[0][0].should eq 'Content-Transfer-Encoding'
-      mail.errors[0][1].should eq 'vl@d'
-      mail.errors[1][0].should eq 'Reply-To'
-      mail.errors[1][1].should eq 'a b b'
+      mail.errors[0][0].should eq 'Reply-To'
+      mail.errors[0][1].should eq 'a b b'
+      mail.errors[1][0].should eq 'Content-Transfer-Encoding'
+      mail.errors[1][1].should eq 'vl@d'
     end
   end
 

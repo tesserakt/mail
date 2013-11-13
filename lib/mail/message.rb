@@ -353,14 +353,15 @@ module Mail
       return false unless other.respond_to?(:encoded)
 
       if self.message_id && other.message_id
-        result = (self.encoded == other.encoded)
+        self.encoded == other.encoded
       else
         self_message_id, other_message_id = self.message_id, other.message_id
-        self.message_id, other.message_id = '<temp@test>', '<temp@test>'
-        result = self.encoded == other.encoded
-        self.message_id = "<#{self_message_id}>" if self_message_id
-        other.message_id = "<#{other_message_id}>" if other_message_id
-        result
+        begin
+          self.message_id, other.message_id = '<temp@test>', '<temp@test>'
+          self.encoded == other.encoded
+        ensure
+          self.message_id, other.message_id = self_message_id, other_message_id
+        end
       end
     end
 
@@ -1974,8 +1975,9 @@ module Mail
     end
 
     def raw_source=(value)
-      value.force_encoding("binary") if RUBY_VERSION >= "1.9.1"
       @raw_source = value.to_crlf
+      @raw_source.force_encoding("binary") if RUBY_VERSION >= "1.9.1"
+      @raw_source
     end
 
     # see comments to body=. We take data and process it lazily
@@ -2128,7 +2130,7 @@ module Mail
         if perform_deliveries
           delivery_method.deliver!(self)
         end
-      rescue Exception => e # Net::SMTP errors or sendmail pipe errors
+      rescue => e # Net::SMTP errors or sendmail pipe errors
         raise e if raise_delivery_errors
       end
     end

@@ -4,6 +4,7 @@
 == Version 2.5.4 - Tue May 14 14:45:00 +1100 2013 Mikel Lindsaar <mikel@lindsaar.net>
 
 Features:
+* Added feature to find the mail in uid (taketin)
 * Save settings passed to TestMailer#new (svanderbleek)
 * Allow the setting of envelope from directly (jeremy)
 * Accept other IETF/IANA-registered Content-Types and Content-Transfer-Encodings (jeremy)
@@ -19,6 +20,8 @@ Features:
 * Close pull request 389 - Don't add superfluous message headers to MIME parts (djmaze, jeremy)
 
 Performance:
+* Migrate to RAGEL based parser, awesome work by (bpot)
+* Performance improvements for people parsing email headers (ConradIrwin)
 * Close pull request 488 - Speed up field construction & comparison (bpot)
 
 Bugs:
